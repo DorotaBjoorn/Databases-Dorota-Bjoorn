@@ -6,6 +6,9 @@ name = "pypi"
 [packages]
 black = "*"
 ipykernel = "*"
+pandas = "*"
+sqlalchemy = "*"
+pyodbc = "*"
 
 [dev-packages]
 
