@@ -1,10 +1,14 @@
-﻿-- Datatype -----------------------------------------------------------------------------------------
+﻿-- Scaler value functions-----------------------------------------------------------------------------
+-- Datatype -----------------------------------------------------------------------------------------
 select len(firstname), firstname from users;
 select len(firstname), DATALENGTH(firstname), firstname from users; -- stränglängd och datalängd
-select IDENTITY(int, 1, 1) as Ident, * into users2 from users; -- skapa identitykolumn med select into
+select datalength(N'Fredrik') -- N gör om ASCII (char, varchar) till Unicode (nchar, nvarchar) så 7 byte blir 14 byte
+select IDENTITY(int, 1, 1) as Ident, * into users2 from users; -- skapa identitykolumn med automatisk nummerering med select into
+-- Id int primary key IDENTINTY(1, 1) -- för att skapa en kolumn med automatisk Id uppräkning
 SELECT CAST('45', int); -- byta datatyp nvarchar -> int enligt ISO-SQL
 SELECT CAST('4.5' as float);
 SELECT CONVERT(bigint, '45') -- byta datatyp till bigint T-SQL
+
 
 
 -- Datetime -----------------------------------------------------------------------------------------
@@ -21,6 +25,7 @@ select datepart(WEEKDAY, getdate()); -- Ta ut del av datetime som int
 select datetrunc(MINUTE, getdate()); -- Trunkerar med angiven precision
 --year, month, week, day, hour, minute, second, millisecond
 --dayofyear, quarter, weekday-1 (weekday räknar från söndag)
+
 
 
 -- Math function -----------------------------------------------------------------------------------------
@@ -47,12 +52,22 @@ select
 from
 	users;
 ------------
-CASE
+CASE -- kan användas som del av CRUD operation
     WHEN condition1 THEN result1
-    WHEN condition2 THEN result2
     WHEN conditionN THEN resultN
     ELSE result
 END;
+
+-- Prodedual TSQL
+IF - ELSE
+TRY - CATCH -- accept
+
+WHILE villkor
+BEGIN
+	operation
+END
+
+
 
 -- String ----------------------------------------------------------------------------------------
 select ascii('A'); -- Ger ASCII-koden för ett tecken
@@ -97,6 +112,7 @@ select
 	GameOfThrones
 ---------
 
+
 -- Agg, Group, Where, Having=====================================================================
 select string_agg(colname, ', ') -- get values from colame separated by ','
 select count(colname) -- count values
@@ -114,6 +130,21 @@ having - filtrering på gruppnivå efter group by
 select * from string_split('red;blue;green;yellow;purple', ';', 1); -- sista parametern anger om ordinalkolumnen ska med.
 select * from generate_series(10, 20, 2); -- start, end, step
 
+-- Generating values
+select
+	value,
+	rand() as '1 random', -- körs bara 1 gång/select så kommer ge en kolumn med samma nummer 0-1
+	newID() as 'GUID',
+	checksum(newId()) as 'all random', --CHECKSUM() är hashfuntion
+	rand(checksum(newId())) as 'all random float range 0 - 1',
+	rand(checksum(newId())) *10  as 'all random float range 0 - 10',
+	rand(checksum(newId())) *10 -5  as 'all random float range -5 - 5',
+	abs(checksum(newId())) % 5 as 'all random int range 0 - 4',
+	char(65 + abs(checksum(newId())) % 26) as 'random letter A-Z' -- char(65) = 'A'
+from generate_series(1,10);
+select choose(2, 'Röd', 'Grön', 'Blå'); --väljer 2a i en lista (2a kan komma från en kolumn)
+
+
 
 -- Övrigt ---------------------------------------------------------------------------------------
 IS NULL -- kollar om värdet är NULL (kan ej använda == eller =)
@@ -123,11 +154,27 @@ select coalesce(null, null, null, 'test', null, 'hej'); -- ge första värdet so
 select coalesce(dst, time, ICAO, IATA) from Airports; -- exempel på coalesce med flera kolumner
 select newid(); -- generar ett GUID (UUID)
 select top 10 * from users order by newid(); -- trick för att sortera i random ording
+select checksum('Fredrik'); -- # hashfunktion
 
 
 ==================================================================================================================================
 DELETE -- tar bort rader men nollställer inte räknaren
 TRUNCATE -- tar bort rader och nollställer räknaren
 DROP TABLE -- tar bort hela tabellen
-DECLARE @variabelnamn AS int = värde -- deklarera variabler och sätta ett värde
+DECLARE @variabelnamn AS int (= värde) -- deklarera variabler (och sätta ett värde)
 SET @variabelnamn = värde -- sätta ett värde på variablen
+ALTER table - t ex sätta in en kolumn
+CREATE view
+
+-- Importing data------------------------
+BULK INSERT FROM 'c.\test.csv' -- sätta in många rader från andra filer
+SELECT * FROM openrowset(bulk '') --hämta rowsets från andra datakällor
+
+-- ACID ----------------------------------------------------------------------
+BEGIN TRANSAKTION -- markerar början
+COMMIT -- spara ändringar på serverns hårddisk
+ROLLBACK -- avbryta och rulla tillbaka ändringar
+
+-- Table value functions-------------------------------------------------------------
+select * from generate_series(1, 10, 1) --  genererar en serie(start stop step)
+select dateadd(hour, value, '2023-01-01') from generate_series(1, 30) -- value är resultatet från serien 1-10 och han göras räkneops på
