@@ -123,7 +123,7 @@ GO
 
 SELECT
 	r.RegionDescription AS 'Region',
-	COUNT(*) AS 'Number of employees'
+	COUNT(Distinct et.EmployeeId) AS 'Number of employees' -- updated (*) to (Distinct et.EmployeeId)
 FROM
 	company.employee_territory et
 	JOIN company.territories t ON et.TerritoryId = t.Id
@@ -133,6 +133,8 @@ GROUP BY
 
 GO
 
+-- commented away
+/*
 SELECT
 	e.Id,
 	CONCAT(e.TitleOfCourtesy, ' ', e.FirstName, ' ', e.LastName) AS 'Employee',
@@ -144,6 +146,7 @@ ORDER BY
 	[Reports to];
 
 GO
+*/
 
 SELECT
 	e.Id,
