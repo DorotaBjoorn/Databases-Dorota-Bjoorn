@@ -235,6 +235,12 @@ BEGIN
 		RETURN
 	END
 
+	IF @BookId NOT IN (SELECT BookId FROM Inventory WHERE ShopId = @StoreIdFrom)
+	BEGIN
+		THROW 50006, 'Current store does not hold book with provided ISBN', 1;
+		RETURN
+	END
+
 	IF @BookId NOT LIKE REPLICATE('[0-9]', 13)
 	BEGIN
 		THROW 50002, 'Provided number is not a valid ISBN', 1;
@@ -247,9 +253,15 @@ BEGIN
 		RETURN
 	END
 
+	IF @NumberBooks <= 0
+	BEGIN
+		THROW 50004, 'Number of books has to be a positive number', 1;
+		RETURN
+	END
+
 	IF @StoreIdFrom NOT IN (SELECT ShopId FROM Inventory) OR @StoreIdTo NOT IN (SELECT ShopId FROM Inventory)
 	BEGIN
-		THROW 50004, 'Provided store Id does not exist', 1;
+		THROW 50005, 'Provided store Id does not exist', 1;
 		RETURN
 	END
 
@@ -258,15 +270,22 @@ BEGIN
 		SET BooksInStock = BooksInStock - @NumberBooks
 		WHERE ShopId = @StoreIdFrom AND BookId = @BookId;
 
-		UPDATE Inventory
-		SET BooksInStock = BooksInStock + @NumberBooks
-		WHERE ShopId = @StoreIdTo AND BookId = @BookId;
+		IF EXISTS (SELECT * FROM Inventory WHERE ShopId = @StoreIdTo AND BookId = @BookId)
+		BEGIN
+			UPDATE Inventory
+			SET BooksInStock = BooksInStock + @NumberBooks
+			WHERE ShopId = @StoreIdTo AND BookId = @BookId;
+		END
+		ELSE
+		BEGIN
+			INSERT INTO Inventory (ShopId, BookId, BooksInStock)
+			VALUES (@StoreIdTo, @BookId, @NumberBooks)
+		END
 
 		PRINT 'Books have been moved successfully';
 	COMMIT
 END
-
--- EXECUTE MoveBook 2, 1, 9780266690066
+-- EXECUTE MoveBook 2, 1, 9780266690066, 0
 
 
 --Query for Python excercise ------------------------
